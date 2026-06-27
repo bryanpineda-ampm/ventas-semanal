@@ -6,6 +6,46 @@
 <title>Registro de Ventas Semanal</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAkuKkJGof9JMya42UDUOa2vh9Dj1cdaUA",
+  authDomain: "ventas-semanal.firebaseapp.com",
+  databaseURL: "https://ventas-semanal-default-rtdb.firebaseio.com",
+  projectId: "ventas-semanal",
+  storageBucket: "ventas-semanal.firebasestorage.app",
+  messagingSenderId: "629330032504",
+  appId: "1:629330032504:web:039ced6564337c1e427a8d"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Guardar datos en Firebase
+window.saveDataFirebase = function(data, cfg) {
+  set(ref(db, 'ventasData'), data);
+  set(ref(db, 'ventasCFG'), cfg);
+};
+
+// Cargar datos desde Firebase al iniciar
+onValue(ref(db, 'ventasData'), (snapshot) => {
+  if (snapshot.exists()) {
+    window.allData = snapshot.val();
+    localStorage.setItem("ventasData", JSON.stringify(window.allData));
+  }
+});
+
+onValue(ref(db, 'ventasCFG'), (snapshot) => {
+  if (snapshot.exists()) {
+    window.CFG = snapshot.val();
+    localStorage.setItem("ventasCFG", JSON.stringify(window.CFG));
+    if(window.loadConfigUI) window.loadConfigUI();
+    if(window.render) window.render();
+  }
+});
+</script>
 <style>
 :root{
   --naranja:#FF6B00;--naranja-light:#FFF0E6;--azul:#003087;--azul-light:#E6EBF5;
@@ -433,7 +473,10 @@ let barChartInst=null,chartAcumInst=null,chartPartInst=null,chartCaidasInst=null
 let allData=JSON.parse(localStorage.getItem("ventasData")||"{}");
 const META_KEYS=["hallazgos","notas","acciones","logros"];
 const isDataKey=k=>!META_KEYS.includes(k);
-function saveData(){localStorage.setItem("ventasData",JSON.stringify(allData));}
+function saveData(){
+  localStorage.setItem("ventasData",JSON.stringify(allData));
+  if(window.saveDataFirebase) window.saveDataFirebase(allData, CFG);
+}
 
 // TEMA
 let darkMode=localStorage.getItem("darkMode")==="1";
@@ -457,6 +500,7 @@ function saveConfig(){
   CFG.dias=parseInt(document.getElementById("cfg_dias").value)||0;
   CFG.acumAnterior=parseFloat(document.getElementById("cfg_acum").value)||0;
   localStorage.setItem("ventasCFG",JSON.stringify(CFG));
+  if(window.saveDataFirebase) window.saveDataFirebase(allData, CFG);
   document.getElementById("tituloTienda").textContent="📊 "+CFG.nombre;
   const m=document.getElementById("cfg_msg");m.style.display="block";
   setTimeout(()=>m.style.display="none",2000);render();

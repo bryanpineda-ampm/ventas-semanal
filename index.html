@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Registro de Ventas Semanal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --naranja:#FF6B00;--naranja-light:#FFF0E6;--azul:#003087;--azul-light:#E6EBF5;
+  --bg:#f5f5f3;--surface:#fff;--border:#eee;--text:#1a1a18;--text2:#888;--input-bg:#fff;
+  --th-bg:#003087;--row-hover:#f9f9f7;--total-bg:#E6EBF5;--card-border:#eee;
+}
+[data-theme="dark"]{
+  --bg:#0f1117;--surface:#1a1d27;--border:#2a2d3a;--text:#e8e8e6;--text2:#888;--input-bg:#23263a;
+  --th-bg:#001a5c;--row-hover:#1f2235;--total-bg:#151829;--card-border:#2a2d3a;
+  --naranja-light:#2a1800;--azul-light:#0a1530;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;transition:background .3s,color .3s}
+.container{max-width:1100px;margin:0 auto;padding:20px}
+.header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+h1{font-size:18px;font-weight:600;color:var(--azul)}
+[data-theme="dark"] h1{color:#6ea4ff}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:var(--text)}
+.btn:hover{opacity:.85}
+.btn-green{background:var(--naranja);color:#fff;border-color:var(--naranja)}
+.btn-blue{background:var(--azul);color:#fff;border-color:var(--azul)}
+[data-theme="dark"] .btn-blue{background:#1a3a8f}
+.theme-btn{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:13px;color:var(--text);display:flex;align-items:center;gap:6px}
+.tabs{display:flex;border-bottom:2px solid var(--naranja);margin-bottom:16px;flex-wrap:wrap}
+.tab{background:none;border:none;border-bottom:3px solid transparent;padding:7px 14px;cursor:pointer;font-size:13px;color:var(--text2);margin-bottom:-2px}
+.tab.active{border-bottom-color:var(--azul);color:var(--azul);font-weight:600}
+[data-theme="dark"] .tab.active{color:#6ea4ff;border-bottom-color:#6ea4ff}
+.tab:hover{color:var(--naranja)}
+.week-nav{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.week-nav button{background:var(--surface);border:1px solid var(--naranja);border-radius:8px;padding:4px 12px;cursor:pointer;font-size:14px;color:var(--naranja)}
+.week-nav button:hover{background:var(--naranja-light)}
+.week-label{font-size:13px;color:var(--text2);min-width:220px;text-align:center}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px}
+.card{background:var(--surface);border-radius:8px;padding:12px 14px;border:1px solid var(--card-border);border-top:3px solid var(--naranja)}
+.card-label{font-size:12px;color:var(--text2);margin-bottom:4px}
+.card-value{font-size:17px;font-weight:600;color:var(--text)}
+table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+th{font-size:12px;font-weight:500;padding:8px 10px;border-bottom:2px solid var(--naranja);text-align:right;white-space:nowrap;cursor:pointer;background:var(--th-bg);color:#fff}
+th.left{text-align:left}
+th:hover{opacity:.85}
+td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;vertical-align:middle;color:var(--text)}
+td:first-child{text-align:left;font-weight:500}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--row-hover)}
+.total-row td{background:var(--total-bg);font-weight:600;color:var(--azul)}
+[data-theme="dark"] .total-row td{color:#6ea4ff}
+input[type=number]{width:95px;padding:4px 7px;font-size:13px;border:1px solid var(--border);border-radius:6px;text-align:right;background:var(--input-bg);color:var(--text)}
+input[type=number]:focus{outline:none;border-color:var(--naranja)}
+input[type=text],input[type=date],select,textarea{padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--text)}
+input[type=text]:focus,input[type=date]:focus,select:focus,textarea:focus{outline:none;border-color:var(--naranja)}
+.section{display:none}.section.active{display:block}
+.diff-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:16px}
+.diff-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center;border-top:2px solid var(--naranja)}
+.diff-label{font-size:11px;color:var(--text2);margin-bottom:4px}
+.diff-val{font-size:13px;font-weight:600}
+.upload-area{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.upload-box{background:var(--surface);border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s}
+.upload-box:hover,.upload-box.over{border-color:var(--naranja)}
+.upload-box.done{border-color:var(--azul);background:var(--azul-light)}
+.upload-box input{display:none}
+.mode-toggle{display:flex;border:1px solid var(--naranja);border-radius:8px;overflow:hidden;width:fit-content}
+.mode-btn{background:var(--surface);border:none;padding:7px 18px;cursor:pointer;font-size:13px;color:var(--naranja)}
+.mode-btn.active{background:var(--naranja);color:#fff;font-weight:600}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;margin-left:4px;font-weight:600}
+.badge-pos{background:#E1F5EE;color:#0F6E56}
+.badge-neg{background:#FCEBEB;color:#A32D2D}
+[data-theme="dark"] .badge-pos{background:#0a2e20;color:#4dcfa0}
+[data-theme="dark"] .badge-neg{background:#2e0a0a;color:#e07070}
+.ai-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px;border-left:4px solid var(--azul)}
+.ai-box h3{font-size:14px;font-weight:600;margin-bottom:10px;color:var(--azul)}
+[data-theme="dark"] .ai-box h3{color:#6ea4ff}
+.ai-content{font-size:13px;line-height:1.7;color:var(--text)}
+.sub-tabs{display:flex;gap:0;border:1px solid var(--naranja);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:14px;flex-wrap:wrap}
+.sub-tab{background:var(--surface);border:none;padding:6px 14px;cursor:pointer;font-size:12px;color:var(--naranja)}
+.sub-tab.active{background:var(--azul);color:#fff;font-weight:600}
+[data-theme="dark"] .sub-tab.active{background:#1a3a8f}
+.sub-tab:hover:not(.active){background:var(--naranja-light)}
+.sec-title{font-size:15px;font-weight:600;margin-bottom:10px}
+.fecha-filtro{background:var(--azul-light);border:1px solid var(--azul);border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.chart-box{background:var(--surface);border-radius:8px;padding:16px;border:1px solid var(--border);border-top:3px solid var(--naranja)}
+/* AI streaming */
+.ai-streaming{border-left:3px solid var(--naranja);padding-left:12px;font-size:13px;line-height:1.8;color:var(--text);white-space:pre-wrap}
+.ai-typing::after{content:"▋";animation:blink .7s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@media(max-width:600px){.diff-grid{grid-template-columns:repeat(4,1fr)}.cards{grid-template-columns:repeat(2,1fr)}.upload-area{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1 id="tituloTienda">📊 Mi Tienda</h1>
+    <div class="header-actions">
+      <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙 Oscuro</button>
+      <button class="btn btn-blue" onclick="exportarJSON()">📦 Exportar datos</button>
+      <button class="btn" onclick="document.getElementById('importJSON').click()">📥 Importar datos</button>
+      <input type="file" id="importJSON" accept=".json" style="display:none" onchange="importarJSON(this)"/>
+      <button class="btn btn-green" onclick="exportCSV()">↓ Exportar CSV</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="setTab(0,this)">Registro</button>
+    <button class="tab" onclick="setTab(1,this)">Gráfico</button>
+    <button class="tab" onclick="setTab(2,this)">📊 Análisis Diario</button>
+    <button class="tab" onclick="setTab(3,this)">📂 Proveedores</button>
+    <button class="tab" onclick="setTab(4,this)">⚙️ Config</button>
+  </div>
+  <div class="week-nav" id="weekNav">
+    <button onclick="changeWeek(-1)">←</button>
+    <span class="week-label" id="weekLabel"></span>
+    <button onclick="changeWeek(1)">→</button>
+    <button onclick="goToCurrentWeek()" style="font-size:11px;padding:3px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--naranja);color:var(--naranja);cursor:pointer">Hoy</button>
+    <span style="font-size:11px;color:var(--text2);margin-left:4px" id="wkTag"></span>
+  </div>
+
+  <!-- TAB 0: REGISTRO -->
+  <div class="section active" id="sec0">
+    <div class="cards" id="cards"></div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th class="left">Día</th>
+          <th>Fecha 2025</th><th>Venta 2025</th>
+          <th>Fecha 2026</th><th>Venta 2026</th>
+          <th>Diferencia</th><th>%</th>
+          <th style="background:var(--naranja)">Cumpl. vs Meta</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;border-left:4px solid var(--naranja)">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">📝 Notas de la semana</div>
+      <textarea id="notaSemana" rows="2" placeholder="Ej: Feriado, promoción, auditoría…" style="width:100%;padding:6px 8px;font-size:13px;border:1px solid var(--border);border-radius:6px;resize:vertical;font-family:Arial,sans-serif;background:var(--input-bg);color:var(--text)"></textarea>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-blue" onclick="generarResumenSemanal()">📋 Resumen para IA</button>
+      <button class="btn btn-green" onclick="abrirIADirecta('semanal')">🤖 Análisis IA Directo</button>
+    </div>
+  </div>
+
+  <!-- TAB 1: GRÁFICO -->
+  <div class="section" id="sec1">
+    <div class="sub-tabs">
+      <button class="sub-tab active" onclick="setGTab(0,this)">📊 Semanal</button>
+      <button class="sub-tab" onclick="setGTab(1,this)">📈 Acumulado Mes</button>
+      <button class="sub-tab" onclick="setGTab(2,this)">🥧 Participación</button>
+      <button class="sub-tab" onclick="setGTab(3,this)">📉 Top Caídas</button>
+      <button class="sub-tab" onclick="setGTab(4,this)">🏆 Top Crecimientos</button>
+      <button class="sub-tab" onclick="setGTab(5,this)">⚡ Cumplimiento</button>
+    </div>
+    <div class="section active" id="gsec0">
+      <div style="display:flex;gap:16px;margin-bottom:10px;font-size:12px;color:var(--text2)">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#FF6B0066;border:1px solid #FF6B00;margin-right:4px"></span>2025</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#003087;margin-right:4px"></span>2026</span>
+      </div>
+      <div style="position:relative;height:280px"><canvas id="barChart"></canvas></div>
+      <div style="font-size:13px;font-weight:600;color:var(--text2);margin:16px 0 8px">Diferencia diaria</div>
+      <div class="diff-grid" id="diffGrid"></div>
+    </div>
+    <div class="section" id="gsec1">
+      <div class="chart-box" style="position:relative;height:300px"><canvas id="chartAcumulado"></canvas></div>
+    </div>
+    <div class="section" id="gsec2">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center">
+        <div class="chart-box" style="position:relative;height:300px"><canvas id="chartParticipacion"></canvas></div>
+        <div id="participacionLegend" style="font-size:12px;line-height:2"></div>
+      </div>
+    </div>
+    <div class="section" id="gsec3">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Top proveedores con caída — 2025 vs 2026</div>
+      <div class="chart-box" style="position:relative;height:340px"><canvas id="chartCaidas"></canvas></div>
+    </div>
+    <div class="section" id="gsec4">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Top proveedores con crecimiento — 2025 vs 2026</div>
+      <div class="chart-box" style="position:relative;height:340px"><canvas id="chartCrec"></canvas></div>
+    </div>
+    <div class="section" id="gsec5">
+      <div class="chart-box" style="position:relative;height:300px;display:flex;align-items:center;justify-content:center">
+        <canvas id="chartGauge" style="max-width:320px"></canvas>
+      </div>
+      <div id="gaugeInfo" style="text-align:center;margin-top:10px;font-size:14px;color:var(--text2)"></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: ANÁLISIS DIARIO -->
+  <div class="section" id="sec2">
+    <div class="week-nav">
+      <button onclick="changeAnalisisWeek(-1)">←</button>
+      <span class="week-label" id="analisisWeekLabel"></span>
+      <button onclick="changeAnalisisWeek(1)">→</button>
+      <button onclick="analisisWeekOffset=0;renderAnalisisDiario()" style="font-size:11px;padding:3px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--naranja);color:var(--naranja);cursor:pointer">Hoy</button>
+      <span style="font-size:11px;color:var(--text2);margin-left:4px" id="analisisWkTag"></span>
+    </div>
+    <div id="analisisContent"></div>
+  </div>
+
+  <!-- TAB 3: PROVEEDORES -->
+  <div class="section" id="sec3">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <span style="font-size:13px;color:var(--text2);font-weight:500">Período:</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active" onclick="setPMode('dia',this)">📅 Día</button>
+        <button class="mode-btn" onclick="setPMode('semana',this)">📆 Semana</button>
+      </div>
+    </div>
+    <div id="fechaFiltroBox" class="fecha-filtro" style="display:none">
+      <div style="font-size:12px;color:var(--azul);margin-bottom:10px;font-weight:500">🗓️ Filtrar por fecha</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px">
+          <div style="font-size:11px;font-weight:600;color:var(--naranja);margin-bottom:8px">📅 Archivo 2025</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:2px">Día específico</label>
+              <input type="date" id="filtroFecha25Unica" onchange="aplicarFiltroFecha()" style="width:100%"/></div>
+            <div style="font-size:11px;color:var(--text2);text-align:center">ó rango</div>
+            <div style="display:flex;gap:6px">
+              <div style="flex:1"><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:2px">Desde</label>
+                <input type="date" id="filtroFecha25Desde" onchange="aplicarFiltroFecha()" style="width:100%"/></div>
+              <div style="flex:1"><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:2px">Hasta</label>
+                <input type="date" id="filtroFecha25Hasta" onchange="aplicarFiltroFecha()" style="width:100%"/></div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px">
+          <div style="font-size:11px;font-weight:600;color:var(--azul);margin-bottom:8px">📅 Archivo 2026</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:2px">Día específico</label>
+              <input type="date" id="filtroFecha26Unica" onchange="aplicarFiltroFecha()" style="width:100%"/></div>
+            <div style="font-size:11px;color:var(--text2);text-align:center">ó rango</div>
+            <div style="display:flex;gap:6px">
+              <div style="flex:1"><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:2px">Desde</label>
+                <input type="date" id="filtroFecha26Desde" onchange="aplicarFiltroFecha()" style="width:100%"/></div>
+              <div style="flex:1"><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:2px">Hasta</label>
+                <input type="date" id="filtroFecha26Hasta" onchange="aplicarFiltroFecha()" style="width:100%"/></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+        <button class="btn" onclick="limpiarFiltroFecha()" style="font-size:12px">✕ Ver todo</button>
+        <span id="filtroActivoLabel" style="font-size:12px;color:var(--naranja);font-weight:500"></span>
+      </div>
+    </div>
+    <div class="upload-area">
+      <div class="upload-box" id="pbox25" onclick="document.getElementById('pfile25').click()" ondragover="pdragOver(event,'pbox25')" ondragleave="pdragLeave('pbox25')" ondrop="pdropFile(event,'25')">
+        <input type="file" id="pfile25" accept=".xlsx,.xls,.csv" onchange="ploadFile(this,'25')"/>
+        <div style="font-size:2rem">📄</div>
+        <div style="font-size:14px;font-weight:600;margin-top:6px;color:var(--azul)">Archivo 2025</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px" id="plabel25">Arrastrá o hacé clic</div>
+      </div>
+      <div class="upload-box" id="pbox26" onclick="document.getElementById('pfile26').click()" ondragover="pdragOver(event,'pbox26')" ondragleave="pdragLeave('pbox26')" ondrop="pdropFile(event,'26')">
+        <input type="file" id="pfile26" accept=".xlsx,.xls,.csv" onchange="ploadFile(this,'26')"/>
+        <div style="font-size:2rem">📄</div>
+        <div style="font-size:14px;font-weight:600;margin-top:6px;color:var(--azul)">Archivo 2026</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px" id="plabel26">Arrastrá o hacé clic</div>
+      </div>
+    </div>
+    <div id="pAnalyzeBtn" style="display:none;margin-bottom:20px;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-green" onclick="pAnalyze()">🔍 Analizar</button>
+      <button class="btn btn-blue" onclick="pRunAI()">🤖 Análisis IA Directo</button>
+      <button class="btn" onclick="pExport()">↓ Exportar CSV</button>
+    </div>
+    <div id="pResults" style="display:none">
+      <div class="cards" id="pSummaryCards"></div>
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="setPRTab(0,this)">Proveedores</button>
+        <button class="sub-tab" onclick="setPRTab(1,this)">Departamento</button>
+        <button class="sub-tab" onclick="setPRTab(2,this)">Categoría</button>
+        <button class="sub-tab" onclick="setPRTab(3,this)">Producto</button>
+        <button class="sub-tab" onclick="setPRTab(4,this)">Gráfico</button>
+        <button class="sub-tab" onclick="setPRTab(5,this)">📈 Acumulado Mes</button>
+      </div>
+      <div class="section active" id="prsec0">
+        <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="pSearch" placeholder="🔍 Buscar proveedor…" oninput="pFilterTable(this.value)" style="width:200px"/>
+          <select id="pFilterDir" onchange="pFilterDir()">
+            <option value="">Todos</option><option value="pos">Solo crecimiento</option><option value="neg">Solo caída</option>
+          </select>
+        </div>
+        <div style="overflow-x:auto"><table id="ptblSupplier">
+          <thead><tr>
+            <th class="left" onclick="pSortTable('ptblSupplier',0)">Proveedor ↕</th>
+            <th onclick="pSortTable('ptblSupplier',1)">Venta 2025 ↕</th>
+            <th onclick="pSortTable('ptblSupplier',2)">Venta 2026 ↕</th>
+            <th onclick="pSortTable('ptblSupplier',3)">Diferencia ↕</th>
+            <th onclick="pSortTable('ptblSupplier',4)">% ↕</th>
+            <th class="left">Estado</th>
+          </tr></thead>
+          <tbody id="pbodySupplier"></tbody>
+        </table></div>
+      </div>
+      <div class="section" id="prsec1">
+        <div style="overflow-x:auto"><table id="ptblDept">
+          <thead><tr>
+            <th class="left" onclick="pSortTable('ptblDept',0)">Departamento ↕</th>
+            <th onclick="pSortTable('ptblDept',1)">Venta 2025 ↕</th>
+            <th onclick="pSortTable('ptblDept',2)">Venta 2026 ↕</th>
+            <th onclick="pSortTable('ptblDept',3)">Diferencia ↕</th>
+            <th onclick="pSortTable('ptblDept',4)">% ↕</th>
+          </tr></thead>
+          <tbody id="pbodyDept"></tbody>
+        </table></div>
+      </div>
+      <div class="section" id="prsec2">
+        <div style="overflow-x:auto"><table id="ptblCat">
+          <thead><tr>
+            <th class="left" onclick="pSortTable('ptblCat',0)">Categoría ↕</th>
+            <th onclick="pSortTable('ptblCat',1)">Venta 2025 ↕</th>
+            <th onclick="pSortTable('ptblCat',2)">Venta 2026 ↕</th>
+            <th onclick="pSortTable('ptblCat',3)">Diferencia ↕</th>
+            <th onclick="pSortTable('ptblCat',4)">% ↕</th>
+          </tr></thead>
+          <tbody id="pbodyCat"></tbody>
+        </table></div>
+      </div>
+      <div class="section" id="prsec3">
+        <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="pSearchItem" placeholder="🔍 Buscar producto o código…" oninput="pFilterItem(this.value)" style="width:240px"/>
+          <select id="pFilterItemDir" onchange="pFilterItemDir()">
+            <option value="">Todos</option><option value="pos">Solo crecimiento</option><option value="neg">Solo caída</option>
+          </select>
+        </div>
+        <div style="overflow-x:auto"><table id="ptblItem">
+          <thead><tr>
+            <th class="left" onclick="pSortTable('ptblItem',0)">Código ↕</th>
+            <th class="left" onclick="pSortTable('ptblItem',1)">Descripción ↕</th>
+            <th onclick="pSortTable('ptblItem',2)">Venta 2025 ↕</th>
+            <th onclick="pSortTable('ptblItem',3)">Venta 2026 ↕</th>
+            <th onclick="pSortTable('ptblItem',4)">Diferencia ↕</th>
+            <th onclick="pSortTable('ptblItem',5)">% ↕</th>
+            <th class="left">Estado</th>
+          </tr></thead>
+          <tbody id="pbodyItem"></tbody>
+        </table></div>
+      </div>
+      <div class="section" id="prsec4">
+        <div class="chart-box" style="position:relative;height:360px"><canvas id="pChartSupplier"></canvas></div>
+      </div>
+      <div class="section" id="prsec5">
+        <div style="background:var(--azul-light);border:1px solid var(--azul);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--azul)">
+          ℹ️ Comparativo acumulado del mes usando los totales del Registro y las proporciones de los Excel subidos.
+        </div>
+        <div class="cards" id="pAcumCards"></div>
+        <div style="overflow-x:auto;margin-top:12px"><table id="ptblAcum">
+          <thead><tr>
+            <th class="left" onclick="pSortTable('ptblAcum',0)">Proveedor ↕</th>
+            <th onclick="pSortTable('ptblAcum',1)">Acum. 2025 ↕</th>
+            <th onclick="pSortTable('ptblAcum',2)">Acum. 2026 ↕</th>
+            <th onclick="pSortTable('ptblAcum',3)">Diferencia ↕</th>
+            <th onclick="pSortTable('ptblAcum',4)">% ↕</th>
+            <th class="left">Estado</th>
+          </tr></thead>
+          <tbody id="pbodyAcum"></tbody>
+        </table></div>
+      </div>
+      <!-- Panel IA Proveedores -->
+      <div class="ai-box" id="pAiBox" style="display:none">
+        <h3>🤖 Análisis IA — Hallazgos y Acciones</h3>
+        <div class="ai-content" id="pAiContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: CONFIG -->
+  <div class="section" id="sec4">
+    <div style="max-width:480px">
+      <h2 style="font-size:15px;font-weight:600;margin-bottom:16px;color:var(--azul)">⚙️ Configuración de la tienda</h2>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px;border-top:3px solid var(--naranja)">
+        <div><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Nombre de la tienda</label>
+          <input type="text" id="cfg_nombre" placeholder="Ej: Tienda Central" style="width:100%"/></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Mes</label>
+            <select id="cfg_mes" style="width:100%">
+              <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+              <option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option>
+              <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+              <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+            </select></div>
+          <div><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Año</label>
+            <input type="number" id="cfg_anio" value="2026" min="2020" max="2099" style="width:100%;text-align:left"/></div>
+        </div>
+        <div><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Meta mensual (C$)</label>
+          <input type="number" id="cfg_meta" placeholder="Ej: 2261043" min="0" step="1" style="width:100%;text-align:left"/></div>
+        <div><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Días del mes</label>
+          <input type="number" id="cfg_dias" placeholder="Ej: 30" min="28" max="31" style="width:100%;text-align:left"/></div>
+        <div><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Venta acumulada semanas anteriores (C$)</label>
+          <input type="number" id="cfg_acum" placeholder="Ej: 605897.61" min="0" step="0.01" style="width:100%;text-align:left"/>
+          <div style="font-size:11px;color:var(--text2);margin-top:3px">Venta cerrada antes de registrar en esta herramienta</div></div>
+        <button onclick="saveConfig()" class="btn btn-green" style="padding:9px 0;font-size:14px;border-radius:8px">Guardar configuración</button>
+        <div id="cfg_msg" style="font-size:12px;color:var(--naranja);display:none;text-align:center">✅ Configuración guardada</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IA DIRECTO -->
+<div id="iaModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:2000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--surface);border-radius:14px;padding:20px;max-width:640px;width:100%;max-height:90vh;overflow-y:auto;border-top:4px solid var(--naranja);display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 style="font-size:15px;font-weight:600;color:var(--azul)" id="iaTitulo">🤖 Análisis IA</h3>
+      <button onclick="cerrarIA()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text2)">✕</button>
+    </div>
+    <div id="iaRespuesta" class="ai-streaming" style="min-height:120px;background:var(--azul-light);border-radius:8px;padding:14px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="try{navigator.clipboard.writeText(window._iaRespuestaTexto||'')}catch(e){}" style="font-size:12px">📋 Copiar respuesta</button>
+      <button class="btn btn-green" onclick="cerrarIA()" style="font-size:12px">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DAYS=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const NARANJA="#FF6B00",AZUL="#003087";
+let CFG=JSON.parse(localStorage.getItem("ventasCFG")||"null")||{nombre:"Mi Tienda",mes:5,anio:2026,meta:2261043,dias:30,acumAnterior:605897.61};
+const getMeta=()=>CFG.meta||2261043;
+const getDias=()=>CFG.dias||30;
+const getAcumAnterior=()=>CFG.acumAnterior||0;
+const fmtC=n=>"C$"+Math.round(n).toLocaleString("es-NI");
+const fmtC2=n=>"C$"+(parseFloat(n)||0).toLocaleString("es-NI",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtPct=n=>(n>=0?"+":"")+n.toFixed(1)+"%";
+const fmtDate=d=>d.toLocaleDateString("es-NI",{day:"2-digit",month:"2-digit"});
+const fmtDateFull=d=>d.toLocaleDateString("es-NI",{day:"2-digit",month:"2-digit",year:"numeric"});
+const POS="#1D9E75",NEG="#E24B4A";
+let weekOffset=0,currentTab=0,analisisWeekOffset=0,currentGTab=0;
+let barChartInst=null,chartAcumInst=null,chartPartInst=null,chartCaidasInst=null,chartCrecInst=null,chartGaugeInst=null;
+let allData=JSON.parse(localStorage.getItem("ventasData")||"{}");
+const META_KEYS=["hallazgos","notas","acciones","logros"];
+const isDataKey=k=>!META_KEYS.includes(k);
+function saveData(){localStorage.setItem("ventasData",JSON.stringify(allData));}
+
+// TEMA
+let darkMode=localStorage.getItem("darkMode")==="1";
+function applyTheme(){
+  document.documentElement.setAttribute("data-theme",darkMode?"dark":"");
+  document.getElementById("themeBtn").textContent=darkMode?"☀️ Claro":"🌙 Oscuro";
+  localStorage.setItem("darkMode",darkMode?"1":"0");
+}
+function toggleTheme(){darkMode=!darkMode;applyTheme();if(currentTab===1)renderGTab(currentGTab);}
+applyTheme();
+
+// IR A SEMANA ACTUAL
+function goToCurrentWeek(){weekOffset=0;render();}
+
+// CONFIG
+function saveConfig(){
+  CFG.nombre=document.getElementById("cfg_nombre").value.trim()||"Mi Tienda";
+  CFG.mes=parseInt(document.getElementById("cfg_mes").value);
+  CFG.anio=parseInt(document.getElementById("cfg_anio").value)||2026;
+  CFG.meta=parseFloat(document.getElementById("cfg_meta").value)||0;
+  CFG.dias=parseInt(document.getElementById("cfg_dias").value)||0;
+  CFG.acumAnterior=parseFloat(document.getElementById("cfg_acum").value)||0;
+  localStorage.setItem("ventasCFG",JSON.stringify(CFG));
+  document.getElementById("tituloTienda").textContent="📊 "+CFG.nombre;
+  const m=document.getElementById("cfg_msg");m.style.display="block";
+  setTimeout(()=>m.style.display="none",2000);render();
+}
+function loadConfigUI(){
+  document.getElementById("cfg_nombre").value=CFG.nombre||"";
+  document.getElementById("cfg_mes").value=CFG.mes??5;
+  document.getElementById("cfg_anio").value=CFG.anio||2026;
+  document.getElementById("cfg_meta").value=CFG.meta||"";
+  document.getElementById("cfg_dias").value=CFG.dias||"";
+  document.getElementById("cfg_acum").value=CFG.acumAnterior||"";
+  document.getElementById("tituloTienda").textContent="📊 "+(CFG.nombre||"Mi Tienda");
+}
+
+function getMonday(offset){const d=new Date(),day=d.getDay();d.setDate(d.getDate()-day+(day===0?-6:1)+offset*7);d.setHours(0,0,0,0);return new Date(d);}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function getWeekNum(d){const dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=dt.getUTCDay()||7;dt.setUTCDate(dt.getUTCDate()+4-day);const yr=new Date(Date.UTC(dt.getUTCFullYear(),0,1));return Math.ceil((((dt-yr)/86400000)+1)/7);}
+function weekKey(offset){const m=getMonday(offset);return m.getFullYear()+"-W"+String(getWeekNum(m)).padStart(2,"0");}
+function getMondayFromKey(wkKey){const[yr,wNum]=wkKey.split("-W");const jan4=new Date(parseInt(yr),0,4);const m=new Date(jan4);m.setDate(jan4.getDate()-(jan4.getDay()||7)+1+(parseInt(wNum)-1)*7);return m;}
+function getV(wk,year,i){return(allData[wk]||{})[year+"_"+i]||0;}
+function setV(wk,year,i,val){if(!allData[wk])allData[wk]={};allData[wk][year+"_"+i]=parseFloat(val)||0;saveData();render();}
+function getAcumMes(mes,anio){let a=getAcumAnterior();Object.keys(allData).filter(isDataKey).forEach(wk=>{const wm=getMondayFromKey(wk);for(let i=0;i<7;i++){const d=addDays(wm,i);if(d.getMonth()===mes&&d.getFullYear()===anio)a+=(allData[wk]["26_"+i]||0);}});return a;}
+function getAcumHastaDia(fl){const mes=fl.getMonth(),anio=fl.getFullYear();let a=getAcumAnterior();Object.keys(allData).filter(isDataKey).forEach(wk=>{const wm=getMondayFromKey(wk);for(let i=0;i<7;i++){const d=addDays(wm,i);if(d.getMonth()===mes&&d.getFullYear()===anio&&d<=fl)a+=(allData[wk]["26_"+i]||0);}});return a;}
+
+function setTab(idx,el){
+  currentTab=idx;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));el.classList.add("active");
+  document.querySelectorAll("#sec0,#sec1,#sec2,#sec3,#sec4").forEach((s,i)=>s.classList.toggle("active",i===idx));
+  document.getElementById("weekNav").style.display=idx<2?"flex":"none";
+  if(idx===4)loadConfigUI();
+  if(idx===1)renderGTab(currentGTab);
+  render();
+}
+function setGTab(idx,el){currentGTab=idx;document.querySelectorAll("#sec1 .sub-tab").forEach(t=>t.classList.remove("active"));el.classList.add("active");["gsec0","gsec1","gsec2","gsec3","gsec4","gsec5"].forEach((id,i)=>document.getElementById(id).classList.toggle("active",i===idx));renderGTab(idx);}
+function renderGTab(idx){const wk=weekKey(weekOffset);if(idx===0)renderChart(wk);else if(idx===1)renderChartAcumulado();else if(idx===2)renderChartParticipacion();else if(idx===3)renderChartCaidas();else if(idx===4)renderChartCrec();else if(idx===5)renderChartGauge();}
+function changeWeek(dir){weekOffset+=dir;render();}
+function changeAnalisisWeek(dir){analisisWeekOffset+=dir;renderAnalisisDiario();}
+
+function render(){
+  if(currentTab===2){renderAnalisisDiario();return;}
+  if(currentTab===3||currentTab===4)return;
+  const wk=weekKey(weekOffset);
+  const mon26=getMonday(weekOffset);
+  const mon25=new Date(mon26);mon25.setFullYear(mon25.getFullYear()-1);mon25.setDate(mon25.getDate()+1);
+  document.getElementById("weekLabel").textContent=fmtDate(mon25)+" – "+fmtDate(addDays(mon25,6))+" / "+fmtDate(mon26)+" – "+fmtDate(addDays(mon26,6));
+  document.getElementById("wkTag").textContent=wk;
+  let t25=0,t26=0;
+  DAYS.forEach((_,i)=>{t25+=getV(wk,25,i);t26+=getV(wk,26,i);});
+  const tDiff=t26-t25,tPct=t25>0?(tDiff/t25)*100:(t26>0?100:0);
+  const mesV=mon26.getMonth(),anioV=mon26.getFullYear();
+  const acumMes=getAcumMes(mesV,anioV);
+  const META=getMeta();
+  const cumplMes=META>0?(acumMes/META)*100:0;
+  const faltaMeta=META-acumMes;
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const diaHoy=hoy.getMonth()===mesV&&hoy.getFullYear()===anioV?hoy.getDate():getDias();
+  const prom=diaHoy>0?acumMes/diaHoy:0;
+  const proy=acumMes+prom*(getDias()-diaHoy);
+  const brecha=proy-META;
+  document.getElementById("cards").innerHTML=[
+    ["Total 2025",fmtC(t25),null],["Total 2026",fmtC(t26),null],
+    ["Diferencia",fmtC(tDiff),tDiff],["Variación",fmtPct(tPct),tPct],
+    ["Meta Mensual",fmtC(META),null],["Acum. Mes",fmtC(acumMes),null],
+    ["Cumpl. Mes",cumplMes.toFixed(2)+"%",cumplMes>=100?1:-1],
+    ["Falta Meta",fmtC(faltaMeta),faltaMeta<=0?1:-1],
+    ["Proyección",fmtC(proy),brecha>=0?1:-1],
+    ["vs Meta",fmtC(brecha),brecha>=0?1:-1]
+  ].map(([l,v,s])=>`<div class="card"><div class="card-label">${l}</div><div class="card-value" style="color:${s===null?"var(--text)":s>=0?POS:NEG}">${v}</div></div>`).join("");
+  const sc=cumplMes>=100?AZUL:cumplMes>=80?NARANJA:"#E24B4A";
+  const se=cumplMes>=100?"🟢":cumplMes>=80?"🟡":"🔴";
+  const st=cumplMes>=100?"¡Vas muy bien!":cumplMes>=80?"En riesgo":"Por debajo — acción requerida";
+  const semHtml=`<div id="semaforo" style="display:flex;align-items:center;gap:14px;background:var(--surface);border:1.5px solid ${sc};border-left:5px solid ${sc};border-radius:10px;padding:12px 18px;margin-bottom:16px;flex-wrap:wrap">
+    <div style="font-size:2rem">${se}</div>
+    <div><div style="font-size:13px;font-weight:700;color:${sc}">${st}</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:2px">Cumpl: <strong>${cumplMes.toFixed(2)}%</strong> · Proyección: <strong style="color:${brecha>=0?AZUL:NEG}">${fmtC(proy)}</strong> · ${brecha>=0?"✅ Superarás la meta en <strong>"+fmtC(brecha)+"</strong>":"⚠️ Brecha de <strong>"+fmtC(Math.abs(brecha))+"</strong>"}</div></div>
+  </div>`;
+  const ex=document.getElementById("semaforo");
+  if(ex)ex.outerHTML=semHtml;else document.getElementById("cards").insertAdjacentHTML("afterend",semHtml);
+  let rows=DAYS.map((day,i)=>{
+    const v25=getV(wk,25,i),v26=getV(wk,26,i),diff=v26-v25,pct=v25>0?(diff/v25)*100:(v26>0?100:0),has=v25>0||v26>0;
+    const fd=addDays(mon26,i),ac=getAcumHastaDia(fd),cd=META>0?(ac/META)*100:0;
+    const cc=cd>=100?AZUL:cd>=80?NARANJA:NEG;
+    return `<tr>
+      <td>${day}<br><small style="font-weight:400;font-size:11px;color:var(--text2)">${fmtDate(addDays(mon25,i))} / ${fmtDate(fd)}</small></td>
+      <td style="font-size:11px;color:var(--text2)">${fmtDate(addDays(mon25,i))}</td>
+      <td><input type="number" min="0" step="1" value="${getV(wk,25,i)||""}" placeholder="0" onchange="setV('${wk}',25,${i},this.value)"/></td>
+      <td style="font-size:11px;color:var(--text2)">${fmtDate(fd)}</td>
+      <td><input type="number" min="0" step="1" value="${getV(wk,26,i)||""}" placeholder="0" onchange="setV('${wk}',26,${i},this.value)"/></td>
+      <td style="color:${has?(diff>=0?POS:NEG):""}">${has?fmtC(diff):"—"}</td>
+      <td style="color:${has?(pct>=0?POS:NEG):""}">${has?fmtPct(pct):"—"}</td>
+      <td style="background:${darkMode?"#1a1200":"#FFF0E6"};font-weight:600;color:${ac>0?cc:"var(--text2)"}">${ac>0?cd.toFixed(2)+"%":"—"}</td>
+    </tr>`;
+  }).join("");
+  const cs=META>0?(acumMes/META)*100:0;
+  rows+=`<tr class="total-row"><td colspan="2">Total semana</td><td>${fmtC(t25)}</td><td></td><td>${fmtC(t26)}</td>
+    <td style="color:${tDiff>=0?POS:NEG}">${fmtC(tDiff)}</td>
+    <td style="color:${tPct>=0?POS:NEG}">${fmtPct(tPct)}</td>
+    <td style="background:var(--azul-light)">${acumMes>0?cs.toFixed(2)+"%":"—"}</td></tr>`;
+  document.getElementById("tbody").innerHTML=rows;
+  const ta=document.getElementById("notaSemana");
+  if(ta){ta.value=(allData["notas"]||{})[wk]||"";ta.onchange=()=>saveNota(wk,ta.value);}
+  if(currentTab===1)renderGTab(currentGTab);
+}
+
+function destroyChart(inst){if(inst)inst.destroy();return null;}
+
+const diffLabelPlugin={
+  id:"diffLabel",
+  afterDatasetsDraw(chart){
+    const{ctx,scales:{x,y}}=chart;
+    const ds0=chart.getDatasetMeta(0),ds1=chart.getDatasetMeta(1);
+    if(!ds0.data.length||!ds1.data.length)return;
+    ctx.save();
+    ds0.data.forEach((bar,i)=>{
+      const d=ds1.data[i];
+      const diff=(chart.data.datasets[1].data[i]||0)-(chart.data.datasets[0].data[i]||0);
+      const xMid=(bar.x+d.x)/2;
+      const yTop=Math.min(bar.y,d.y)-10;
+      const absDiff=Math.abs(diff);
+      const txt=(diff>=0?"+":"-")+(absDiff>=1000?(Math.round(absDiff/1000)+"k"):Math.round(absDiff).toLocaleString("es-NI"));
+      ctx.font="bold 11px Arial";
+      const tw=ctx.measureText(txt).width;
+      ctx.fillStyle=diff>=0?POS:NEG;
+      ctx.beginPath();if(ctx.roundRect)ctx.roundRect(xMid-tw/2-5,yTop-14,tw+10,16,3);else ctx.rect(xMid-tw/2-5,yTop-14,tw+10,16);ctx.fill();
+      ctx.fillStyle="#fff";ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText(txt,xMid,yTop-6);
+    });
+    ctx.restore();
+  }
+};
+
+function renderChart(wk){
+  barChartInst=destroyChart(barChartInst);
+  const labels=DAYS.map(d=>d.slice(0,3));
+  const d25=DAYS.map((_,i)=>getV(wk,25,i)),d26=DAYS.map((_,i)=>getV(wk,26,i));
+  barChartInst=new Chart(document.getElementById("barChart"),{type:"bar",
+    data:{labels,datasets:[
+      {label:"2025",data:d25,backgroundColor:"#FF6B0055",borderColor:NARANJA,borderWidth:1.5,borderRadius:3},
+      {label:"2026",data:d26,backgroundColor:AZUL,borderRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>v>0?"C$"+Math.round(v/1000)+"k":0,font:{size:11},color:darkMode?"#aaa":"#666"},grid:{color:darkMode?"#2a2d3a":"#eee"}},x:{ticks:{font:{size:12},color:darkMode?"#aaa":"#666"}}}}
+  });
+  document.getElementById("diffGrid").innerHTML=DAYS.map((day,i)=>{
+    const v25=getV(wk,25,i),v26=getV(wk,26,i),diff=v26-v25,has=v25>0||v26>0;
+    return `<div class="diff-card"><div class="diff-label">${day.slice(0,3)}</div><div class="diff-val" style="color:${has?(diff>=0?AZUL:NEG):"var(--text2)"}">${has?fmtC(diff):"—"}</div></div>`;
+  }).join("");
+}
+
+function renderChartAcumulado(){
+  chartAcumInst=destroyChart(chartAcumInst);
+  const mes=getMonday(weekOffset).getMonth(),anio=getMonday(weekOffset).getFullYear();
+  const diasMes=getDias(),META=getMeta();
+  const labels=[],dataAcum=[],dataMeta=[];
+  let acum=getAcumAnterior();
+  for(let dia=1;dia<=diasMes;dia++){
+    Object.keys(allData).filter(isDataKey).forEach(wk=>{const wm=getMondayFromKey(wk);for(let i=0;i<7;i++){const d=addDays(wm,i);if(d.getFullYear()===anio&&d.getMonth()===mes&&d.getDate()===dia)acum+=(allData[wk]["26_"+i]||0);}});
+    labels.push(dia);dataAcum.push(parseFloat(acum.toFixed(2)));dataMeta.push(parseFloat((META/diasMes*dia).toFixed(2)));
+  }
+  chartAcumInst=new Chart(document.getElementById("chartAcumulado"),{type:"line",
+    data:{labels,datasets:[
+      {label:"Acumulado 2026",data:dataAcum,borderColor:AZUL,backgroundColor:"rgba(0,48,135,0.1)",fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:AZUL},
+      {label:"Meta",data:dataMeta,borderColor:NARANJA,borderDash:[6,3],fill:false,tension:0,pointRadius:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>"C$"+Math.round(v/1000)+"k",font:{size:11},color:darkMode?"#aaa":"#666"},grid:{color:darkMode?"#2a2d3a":"#eee"}},x:{ticks:{font:{size:11},color:darkMode?"#aaa":"#666"}}}}
+  });
+}
+
+function renderChartParticipacion(){
+  chartPartInst=destroyChart(chartPartInst);
+  if(!pRows||!pRows.length){document.getElementById("participacionLegend").innerHTML=`<div style="color:var(--text2);font-size:13px">Subí los Excel en Proveedores primero.</div>`;return;}
+  const top10=pRows.filter(r=>r.v26>0).sort((a,b)=>b.v26-a.v26).slice(0,10);
+  const total=top10.reduce((s,r)=>s+r.v26,0)||1;
+  const colors=[AZUL,NARANJA,"#E8A020","#E24B4A","#9B59B6","#E67E22","#1ABC9C","#3498DB","#E91E63","#607D8B"];
+  chartPartInst=new Chart(document.getElementById("chartParticipacion"),{type:"doughnut",
+    data:{labels:top10.map(r=>r.key),datasets:[{data:top10.map(r=>r.v26),backgroundColor:colors,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+  document.getElementById("participacionLegend").innerHTML=top10.map((r,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${colors[i]};flex-shrink:0"></span>
+      <span style="flex:1;font-size:12px;color:var(--text)">${r.key}</span>
+      <span style="font-weight:600;font-size:12px;color:${AZUL}">${((r.v26/total)*100).toFixed(1)}%</span>
+    </div>`).join("");
+}
+
+function renderChartCaidas(){
+  chartCaidasInst=destroyChart(chartCaidasInst);
+  if(!pRows||!pRows.length)return;
+  const top=pRows.filter(r=>r.diff<0).sort((a,b)=>a.diff-b.diff).slice(0,9);
+  if(!top.length)return;
+  chartCaidasInst=new Chart(document.getElementById("chartCaidas"),{type:"bar",
+    plugins:[diffLabelPlugin],
+    data:{labels:top.map(r=>r.key.length>14?r.key.slice(0,14)+"…":r.key),datasets:[
+      {label:"2025",data:top.map(r=>r.v25),backgroundColor:"#FF6B0055",borderColor:NARANJA,borderWidth:1.5,borderRadius:3},
+      {label:"2026",data:top.map(r=>r.v26),backgroundColor:AZUL,borderRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:28}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>"C$ "+Math.round(ctx.raw).toLocaleString("es-NI")}}},
+      scales:{x:{ticks:{font:{size:10},autoSkip:false,maxRotation:35,color:darkMode?"#aaa":"#666"},grid:{display:false}},
+              y:{ticks:{callback:v=>"C$"+(v/1000).toFixed(0)+"k",font:{size:10},color:darkMode?"#aaa":"#666"},grid:{color:darkMode?"#2a2d3a":"#eee"}}}}
+  });
+}
+
+function renderChartCrec(){
+  chartCrecInst=destroyChart(chartCrecInst);
+  if(!pRows||!pRows.length)return;
+  const top=pRows.filter(r=>r.diff>0).sort((a,b)=>b.diff-a.diff).slice(0,9);
+  if(!top.length)return;
+  chartCrecInst=new Chart(document.getElementById("chartCrec"),{type:"bar",
+    plugins:[diffLabelPlugin],
+    data:{labels:top.map(r=>r.key.length>14?r.key.slice(0,14)+"…":r.key),datasets:[
+      {label:"2025",data:top.map(r=>r.v25),backgroundColor:"#FF6B0055",borderColor:NARANJA,borderWidth:1.5,borderRadius:3},
+      {label:"2026",data:top.map(r=>r.v26),backgroundColor:AZUL,borderRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:28}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>"C$ "+Math.round(ctx.raw).toLocaleString("es-NI")}}},
+      scales:{x:{ticks:{font:{size:10},autoSkip:false,maxRotation:35,color:darkMode?"#aaa":"#666"},grid:{display:false}},
+              y:{ticks:{callback:v=>"C$"+(v/1000).toFixed(0)+"k",font:{size:10},color:darkMode?"#aaa":"#666"},grid:{color:darkMode?"#2a2d3a":"#eee"}}}}
+  });
+}
+
+function renderChartGauge(){
+  chartGaugeInst=destroyChart(chartGaugeInst);
+  const mon26=getMonday(weekOffset);
+  const acumMes=getAcumMes(mon26.getMonth(),mon26.getFullYear());
+  const META=getMeta();
+  const pct=META>0?Math.min((acumMes/META)*100,100):0;
+  const color=pct>=100?AZUL:pct>=80?NARANJA:"#E24B4A";
+  chartGaugeInst=new Chart(document.getElementById("chartGauge"),{type:"doughnut",
+    data:{datasets:[{data:[pct,100-pct],backgroundColor:[color,darkMode?"#2a2d3a":"#f0f0ee"],borderWidth:0,circumference:180,rotation:270}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"75%",plugins:{legend:{display:false},tooltip:{enabled:false}}}
+  });
+  document.getElementById("gaugeInfo").innerHTML=`
+    <div style="font-size:32px;font-weight:700;color:${color}">${pct.toFixed(1)}%</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px">Cumplimiento de meta mensual</div>
+    <div style="font-size:13px;margin-top:4px;color:var(--text)"><strong>${fmtC(acumMes)}</strong> de <strong>${fmtC(META)}</strong></div>
+    <div style="font-size:13px;color:${META-acumMes>0?NEG:AZUL};margin-top:4px">${META-acumMes>0?"Falta: "+fmtC(META-acumMes):"✅ Meta superada en "+fmtC(acumMes-META)}</div>`;
+}
+
+function renderAnalisisDiario(){
+  const wk=weekKey(analisisWeekOffset);
+  const mon26=getMonday(analisisWeekOffset);
+  const mon25=new Date(mon26);mon25.setFullYear(mon25.getFullYear()-1);mon25.setDate(mon25.getDate()+1);
+  document.getElementById("analisisWeekLabel").textContent=fmtDate(mon25)+" – "+fmtDate(addDays(mon25,6))+" / "+fmtDate(mon26)+" – "+fmtDate(addDays(mon26,6));
+  document.getElementById("analisisWkTag").textContent=wk;
+  const d=allData[wk]||{};let dec=[],log=[];
+  DAYS.forEach((day,i)=>{
+    const v25=d["25_"+i]||0,v26=d["26_"+i]||0;
+    if(v25>0||v26>0){const diff=v26-v25,pct=v25>0?(diff/v25)*100:0;
+      const obj={wk,day,i,v25,v26,diff,pct,f25:addDays(mon25,i),f26:addDays(mon26,i)};
+      if(v26<v25)dec.push(obj);else log.push(obj);}
+  });
+  const totDecr=dec.reduce((s,r)=>s+r.diff,0),totLog=log.reduce((s,r)=>s+r.diff,0);
+  let html=`<div class="cards" style="margin-bottom:20px">
+    <div class="card"><div class="card-label">📉 Días con baja</div><div class="card-value" style="color:${NEG}">${dec.length}</div></div>
+    <div class="card"><div class="card-label">💸 Total no vendido</div><div class="card-value" style="color:${NEG}">${fmtC(totDecr)}</div></div>
+    <div class="card"><div class="card-label">🏆 Días con logro</div><div class="card-value" style="color:${AZUL}">${log.length}</div></div>
+    <div class="card"><div class="card-label">💰 Total ganado extra</div><div class="card-value" style="color:${AZUL}">${fmtC(totLog)}</div></div>
+  </div><div class="sec-title" style="color:${NEG}">📉 Días que decrecieron</div>`;
+  if(!dec.length){html+=`<div style="text-align:center;padding:1.5rem;color:var(--text2);background:var(--surface);border-radius:8px;border:1px solid var(--border);margin-bottom:24px">✅ No hay días con decremento esta semana.</div>`;}
+  else{
+    html+=`<div style="overflow-x:auto;margin-bottom:28px"><table><thead><tr>
+      <th class="left">Día</th><th>Fecha 2025</th><th>Venta 2025</th><th>Fecha 2026</th><th>Venta 2026</th><th>Diferencia</th><th>%</th><th class="left">Alerta</th>
+      <th class="left" style="min-width:180px">Hallazgo</th><th class="left" style="min-width:180px">Acción tomada</th>
+    </tr></thead><tbody>`;
+    dec.forEach(r=>{
+      const sev=r.pct<=-20?"🔴":r.pct<=-10?"🟠":"🟡",sevT=r.pct<=-20?"Crítico":r.pct<=-10?"Moderado":"Leve";
+      const hk="hall_"+r.wk+"_"+r.i,ak="accion_"+r.wk+"_"+r.i;
+      const hv=(allData["hallazgos"]?.[hk]||"").replace(/</g,"&lt;"),av=(allData["acciones"]?.[ak]||"").replace(/</g,"&lt;");
+      html+=`<tr><td style="white-space:nowrap;font-weight:600">${r.day}</td>
+        <td style="font-size:12px;color:var(--text2);white-space:nowrap">${fmtDateFull(r.f25)}</td><td>${fmtC(r.v25)}</td>
+        <td style="font-size:12px;color:var(--text2);white-space:nowrap">${fmtDateFull(r.f26)}</td><td>${fmtC(r.v26)}</td>
+        <td style="color:${NEG};font-weight:600">${fmtC(r.diff)}</td><td style="color:${NEG};font-weight:600">${fmtPct(r.pct)}</td>
+        <td>${sev} <span style="font-size:12px;color:var(--text2)">${sevT}</span></td>
+        <td><textarea rows="1" onfocus="expandTA(this)" onblur="collapseTA(this)" onchange="saveHallazgo('${hk}',this.value)" placeholder="Hallazgo…"
+          style="width:100%;min-width:160px;padding:4px 6px;font-size:12px;border:1px solid var(--border);border-radius:6px;resize:none;overflow:hidden;font-family:Arial,sans-serif;height:28px;background:var(--input-bg);color:var(--text)">${hv}</textarea></td>
+        <td><textarea rows="1" onfocus="expandTA(this)" onblur="collapseTA(this)" onchange="saveAccion('${ak}',this.value)" placeholder="Acción tomada…"
+          style="width:100%;min-width:160px;padding:4px 6px;font-size:12px;border:1px solid var(--border);border-radius:6px;resize:none;overflow:hidden;font-family:Arial,sans-serif;height:28px;background:var(--input-bg);color:var(--text)">${av}</textarea></td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>`;
+  }
+  html+=`<div class="sec-title" style="color:${AZUL};margin-top:8px">🏆 Días con logro</div>`;
+  if(!log.length){html+=`<div style="text-align:center;padding:1.5rem;color:var(--text2);background:var(--surface);border-radius:8px;border:1px solid var(--border)">Aún no hay días con crecimiento esta semana.</div>`;}
+  else{
+    html+=`<div style="overflow-x:auto"><table><thead><tr>
+      <th class="left">Día</th><th>Fecha 2025</th><th>Venta 2025</th><th>Fecha 2026</th><th>Venta 2026</th><th>Diferencia</th><th>%</th>
+      <th class="left" style="min-width:180px">¿Qué funcionó?</th>
+    </tr></thead><tbody>`;
+    log.forEach(r=>{
+      const lk="logro_"+r.wk+"_"+r.i;
+      const lv=(allData["logros"]?.[lk]||"").replace(/</g,"&lt;");
+      html+=`<tr style="background:var(--azul-light)">
+        <td style="white-space:nowrap;font-weight:600">${r.day}</td>
+        <td style="font-size:12px;color:var(--text2);white-space:nowrap">${fmtDateFull(r.f25)}</td><td>${fmtC(r.v25)}</td>
+        <td style="font-size:12px;color:var(--text2);white-space:nowrap">${fmtDateFull(r.f26)}</td>
+        <td style="color:${AZUL};font-weight:600">${fmtC(r.v26)}</td>
+        <td style="color:${AZUL};font-weight:600">${fmtC(r.diff)}</td>
+        <td style="color:${AZUL};font-weight:600">${fmtPct(r.pct)}</td>
+        <td><textarea rows="1" onfocus="expandTA(this)" onblur="collapseTA(this)" onchange="saveLogro('${lk}',this.value)" placeholder="¿Qué impulsó este resultado?"
+          style="width:100%;min-width:160px;padding:4px 6px;font-size:12px;border:1px solid var(--border);border-radius:6px;resize:none;overflow:hidden;font-family:Arial,sans-serif;height:28px;background:var(--input-bg);color:var(--text)">${lv}</textarea></td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>`;
+  }
+  html+=`<div style="font-size:11px;color:var(--text2);margin-top:12px">🟡 Leve &lt;10% | 🟠 Moderado 10–20% | 🔴 Crítico &gt;20%</div>`;
+  document.getElementById("analisisContent").innerHTML=html;
+}
+
+// IA DIRECTO
+function llamarIA(prompt, titulo){
+  const modal=document.getElementById("iaModal");
+  const tit=document.getElementById("iaTitulo");
+  const resp=document.getElementById("iaRespuesta");
+  tit.textContent="🤖 "+titulo;
+  window._iaPromptActual=prompt;
+  window._iaRespuestaTexto="";
+  // Copiar automáticamente
+  try{navigator.clipboard.writeText(prompt);}catch(e){}
+  resp.innerHTML=`
+    <div style="background:var(--azul-light);border:1px solid var(--azul);border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--azul)">
+      <strong>📋 Prompt copiado al portapapeles</strong><br>
+      <span style="font-size:12px">Pasos: 1. Abrí claude.ai &nbsp;·&nbsp; 2. Pegá (Ctrl+V) y envialo &nbsp;·&nbsp; 3. Copiá la respuesta &nbsp;·&nbsp; 4. Pegala abajo</span>
+    </div>
+    <textarea id="iaPasteArea" rows="8" placeholder="Pegá aquí la respuesta de Claude…"
+      style="width:100%;padding:10px;font-size:13px;border:1px solid var(--border);border-radius:8px;font-family:Arial,sans-serif;resize:vertical;background:var(--input-bg);color:var(--text);line-height:1.6"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn-green" onclick="mostrarRespuestaIA()">✅ Ver análisis</button>
+      <button class="btn btn-blue" onclick="window.open('https://claude.ai','_blank')">🔗 Abrir claude.ai</button>
+      <button class="btn" onclick="try{navigator.clipboard.writeText(window._iaPromptActual||'')}catch(e){}">📋 Copiar prompt de nuevo</button>
+    </div>
+    <div id="iaResultado" style="display:none;margin-top:14px;background:var(--azul-light);border-radius:8px;padding:14px;font-size:13px;line-height:1.8;white-space:pre-wrap;color:var(--text);border-left:4px solid var(--azul)"></div>`;
+  modal.style.display="flex";
+}
+
+function mostrarRespuestaIA(){
+  const txt=document.getElementById("iaPasteArea")?.value||"";
+  if(!txt.trim()){alert("Pegá la respuesta primero.");return;}
+  window._iaRespuestaTexto=txt;
+  const res=document.getElementById("iaResultado");
+  res.textContent=txt;
+  res.style.display="block";
+  document.getElementById("iaPasteArea").style.display="none";
+  document.querySelector("#iaRespuesta .btn-green").style.display="none";
+  res.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function cerrarIA(){document.getElementById("iaModal").style.display="none";}
+function copiarRespuestaIA(){if(window._iaRespuestaTexto)navigator.clipboard.writeText(window._iaRespuestaTexto);}
+
+function buildPromptSemanal(){
+  const wk=weekKey(weekOffset);
+  const mon26=getMonday(weekOffset);
+  const mon25=new Date(mon26);mon25.setFullYear(mon25.getFullYear()-1);mon25.setDate(mon25.getDate()+1);
+  let t25=0,t26=0;
+  const diasData=DAYS.map((day,i)=>{
+    const v25=getV(wk,25,i),v26=getV(wk,26,i);t25+=v25;t26+=v26;
+    const diff=v26-v25,pct=v25>0?(diff/v25)*100:0;
+    return{day,v25,v26,diff,pct,hallazgo:allData["hallazgos"]?.["hall_"+wk+"_"+i]||"",
+      accion:allData["acciones"]?.["accion_"+wk+"_"+i]||"",logro:allData["logros"]?.["logro_"+wk+"_"+i]||"",fecha26:addDays(mon26,i)};
+  });
+  const tDiff=t26-t25,tPct=t25>0?(tDiff/t25)*100:0;
+  const META=getMeta(),acumMes=getAcumMes(mon26.getMonth(),mon26.getFullYear());
+  const cumpl=META>0?(acumMes/META)*100:0;
+  const nota=(allData["notas"]||{})[wk]||"Sin notas";
+  const crecio=tPct>=1,marginal=tPct>=0&&tPct<1;
+  const tono=crecio?"MOTIVACIONAL Y ESTRATÉGICO":"URGENTE Y CORRECTIVO";
+  const contexto=marginal?"Crecimiento menor al 1% — tratar como bajo rendimiento.":crecio?"Semana con crecimiento positivo.":"Semana con caída de ventas.";
+  const diasStr=diasData.filter(d=>d.v25>0||d.v26>0).map(d=>`- ${d.day} (${fmtDateFull(d.fecha26)}): 2025=C$${d.v25.toLocaleString()} | 2026=C$${d.v26.toLocaleString()} | ${fmtPct(d.pct)} ${d.diff>=0?"✅":"❌"}${d.hallazgo?" | Hallazgo: "+d.hallazgo:""}${d.accion?" | Acción: "+d.accion:""}${d.logro?" | Logro: "+d.logro:""}`).join("\n");
+  return`Soy gerente de tienda. Resumen semanal.\nSEMANA: ${wk} | ${fmtDate(mon25)}–${fmtDate(addDays(mon25,6))} vs ${fmtDate(mon26)}–${fmtDate(addDays(mon26,6))}\nTOTAL: 2025=C$${t25.toLocaleString()} | 2026=C$${t26.toLocaleString()} | Dif=C$${tDiff.toLocaleString()} (${fmtPct(tPct)})\nCUMPLIMIENTO: ${cumpl.toFixed(2)}% de C$${META.toLocaleString()} | NOTA: ${nota}\nCONTEXTO: ${contexto} | TONO: ${tono}\nDÍAS:\n${diasStr}\nAnálisis: 1.RESUMEN 2.DÍAS DESTACADOS 3.PATRONES 4.HALLAZGOS 5.ACCIONES PRÓXIMA SEMANA 6.MENSAJE AL EQUIPO\nLenguaje de gerente. Español. Respuesta concisa.`;
+}
+
+function abrirIADirecta(tipo){
+  if(tipo==='semanal'){
+    llamarIA(buildPromptSemanal(),"Análisis Semanal");
+  }
+}
+
+function generarResumenSemanal(){
+  const prompt=buildPromptSemanal();
+  try{navigator.clipboard.writeText(prompt);}catch(e){}
+  const ex=document.getElementById("resumenModal");if(ex)ex.remove();
+  const modal=document.createElement("div");
+  modal.id="resumenModal";
+  modal.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px";
+  modal.innerHTML=`<div style="background:var(--surface);border-radius:12px;padding:20px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;border-top:4px solid ${NARANJA}">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:12px;color:${AZUL}">📋 Resumen — ${weekKey(weekOffset)}</h3>
+    <div style="background:var(--azul-light);border:1px solid ${AZUL};border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:${AZUL}">
+      ✅ Prompt copiado. 1. Abrí <a href="https://claude.ai" target="_blank" style="color:${NARANJA}">claude.ai</a> · 2. Pegá y envialo · 3. Pegá la respuesta abajo
+    </div>
+    <textarea id="pasteResumen" rows="8" placeholder="Pegá aquí la respuesta de Claude…" style="width:100%;padding:8px;font-size:13px;border:1px solid var(--border);border-radius:8px;font-family:Arial,sans-serif;resize:vertical;background:var(--input-bg);color:var(--text)"></textarea>
+    <div id="resumenRespuesta" style="display:none;margin-top:10px;font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text);background:var(--bg);padding:12px;border-radius:8px"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button onclick="mostrarResumen()" class="btn btn-green">✅ Ver análisis</button>
+      <button onclick="navigator.clipboard.writeText(window._lastResumenPrompt||'')" class="btn btn-blue">📋 Copiar de nuevo</button>
+      <button onclick="document.getElementById('resumenModal').remove()" class="btn">Cerrar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);window._lastResumenPrompt=prompt;
+}
+function mostrarResumen(){
+  const txt=document.getElementById("pasteResumen")?.value||"";
+  if(!txt.trim()){alert("Pegá la respuesta primero.");return;}
+  const resp=document.getElementById("resumenRespuesta");
+  resp.textContent=txt;resp.style.display="block";document.getElementById("pasteResumen").style.display="none";
+}
+
+function expandTA(el){el.style.height="auto";el.style.height=Math.max(80,el.scrollHeight)+"px";el.style.border="1px solid "+NARANJA;el.style.zIndex="10";el.style.boxShadow="0 2px 8px rgba(0,0,0,0.12)";}
+function collapseTA(el){el.style.height="28px";el.style.border="1px solid var(--border)";el.style.boxShadow="none";}
+function saveNota(wk,v){if(!allData["notas"])allData["notas"]={};allData["notas"][wk]=v;saveData();}
+function saveHallazgo(k,v){if(!allData["hallazgos"])allData["hallazgos"]={};allData["hallazgos"][k]=v;saveData();}
+function saveAccion(k,v){if(!allData["acciones"])allData["acciones"]={};allData["acciones"][k]=v;saveData();}
+function saveLogro(k,v){if(!allData["logros"])allData["logros"]={};allData["logros"][k]=v;saveData();}
+
+function exportCSV(){
+  const weeks=Object.keys(allData).filter(k=>isDataKey(k)&&Object.values(allData[k]).some(v=>v>0)).sort();
+  if(!weeks.length){alert("No hay datos.");return;}
+  const META=getMeta();
+  let csv="Semana,Día,Fecha 2025,Venta 2025,Fecha 2026,Venta 2026,Diferencia,%,Cumpl. vs Meta,Hallazgo,Acción,Logro,Nota\n";
+  weeks.forEach(wk=>{
+    const d=allData[wk],mon=getMondayFromKey(wk),mp=new Date(mon);
+    mp.setFullYear(mp.getFullYear()-1);mp.setDate(mp.getDate()+1);
+    const nota=((allData["notas"]||{})[wk]||"").replace(/"/g,'""');
+    DAYS.forEach((day,i)=>{
+      const v25=d["25_"+i]||0,v26=d["26_"+i]||0,diff=v26-v25;
+      const pct=v25>0?((diff/v25)*100).toFixed(2):"0.00";
+      const ac=getAcumHastaDia(addDays(mon,i));
+      const cumpl=META>0?((ac/META)*100).toFixed(2)+"%":"—";
+      const h=(allData["hallazgos"]?.["hall_"+wk+"_"+i]||"").replace(/"/g,'""');
+      const a=(allData["acciones"]?.["accion_"+wk+"_"+i]||"").replace(/"/g,'""');
+      const l=(allData["logros"]?.["logro_"+wk+"_"+i]||"").replace(/"/g,'""');
+      csv+=`"${wk}","${day}","${fmtDateFull(addDays(mp,i))}",${v25},"${fmtDateFull(addDays(mon,i))}",${v26},${diff},${pct}%,${cumpl},"${h}","${a}","${l}","${i===0?nota:""}"\n`;
+    });
+    const s25=DAYS.reduce((s,_,i)=>s+(d["25_"+i]||0),0),s26=DAYS.reduce((s,_,i)=>s+(d["26_"+i]||0),0);
+    const td=s26-s25,tp=s25>0?((td/s25)*100).toFixed(2):"0.00";
+    csv+=`"${wk}","TOTAL","",${s25},"",${s26},${td},${tp}%,"","","","",""\n\n`;
+  });
+  dl(csv,"ventas_semanal.csv");
+}
+function dl(csv,name){
+  const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();
+}
+
+// PROVEEDORES
+let pData25=[],pData26=[],pMode='dia',pChartInst=null,pSortDir={},pRows=[],pItemRows=[];
+let pFiltro25={desde:null,hasta:null},pFiltro26={desde:null,hasta:null};
+
+function setPMode(m,el){pMode=m;document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));el.classList.add("active");}
+function pdragOver(e,id){e.preventDefault();document.getElementById(id).classList.add("over");}
+function pdragLeave(id){document.getElementById(id).classList.remove("over");}
+function pdropFile(e,yr){e.preventDefault();pdragLeave("pbox"+yr);if(e.dataTransfer.files[0])pParseFile(e.dataTransfer.files[0],yr);}
+function ploadFile(input,yr){if(input.files[0])pParseFile(input.files[0],yr);}
+function pParseFile(file,yr){
+  const r=new FileReader();
+  r.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const json=XLSX.utils.sheet_to_json(ws,{defval:""});
+    if(yr==='25'){pData25=json;document.getElementById("plabel25").textContent="✅ "+file.name;document.getElementById("pbox25").classList.add("done");}
+    else{pData26=json;document.getElementById("plabel26").textContent="✅ "+file.name;document.getElementById("pbox26").classList.add("done");}
+    if(pData25.length&&pData26.length){document.getElementById("pAnalyzeBtn").style.display="flex";document.getElementById("fechaFiltroBox").style.display="block";autoDetectarRango();}
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function parseFechaExcel(val){
+  if(!val)return null;
+  if(typeof val==='number'){const utc=new Date(Date.UTC(1899,11,30));utc.setUTCDate(utc.getUTCDate()+Math.floor(val));return new Date(utc.getUTCFullYear(),utc.getUTCMonth(),utc.getUTCDate());}
+  if(typeof val==='string'){
+    const clean=val.trim();
+    if(/^\d{4}-\d{2}-\d{2}/.test(clean)){const p=clean.slice(0,10).split("-");return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));}
+    if(/^\d{1,2}\/\d{1,2}\/\d{4}/.test(clean)){const p=clean.split("/");return new Date(parseInt(p[2]),parseInt(p[0])-1,parseInt(p[1]));}
+    if(/^\d{1,2}-\d{1,2}-\d{4}/.test(clean)){const p=clean.split("-");return new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));}
+    const d=new Date(clean);if(!isNaN(d))return new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  }
+  return null;
+}
+function fechaNorm(d){return d?new Date(d.getFullYear(),d.getMonth(),d.getDate()):null;}
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+function parseInputDate(v){if(!v)return null;const p=v.split("-");return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));}
+
+function autoDetectarRango(){
+  const f25=pData25.map(r=>parseFechaExcel(r["Date Sold"])).filter(Boolean);
+  const f26=pData26.map(r=>parseFechaExcel(r["Date Sold"])).filter(Boolean);
+  if(f25.length){const ts=f25.map(d=>fechaNorm(d).getTime());const mn=new Date(Math.min(...ts)),mx=new Date(Math.max(...ts));document.getElementById("filtroFecha25Desde").value=iso(mn);document.getElementById("filtroFecha25Hasta").value=iso(mx);pFiltro25={desde:fechaNorm(mn),hasta:fechaNorm(mx)};}
+  if(f26.length){const ts=f26.map(d=>fechaNorm(d).getTime());const mn=new Date(Math.min(...ts)),mx=new Date(Math.max(...ts));document.getElementById("filtroFecha26Desde").value=iso(mn);document.getElementById("filtroFecha26Hasta").value=iso(mx);pFiltro26={desde:fechaNorm(mn),hasta:fechaNorm(mx)};}
+  actualizarLabelFiltro();
+}
+function aplicarFiltroFecha(){
+  const u25=document.getElementById("filtroFecha25Unica").value;
+  if(u25){pFiltro25={desde:parseInputDate(u25),hasta:parseInputDate(u25)};document.getElementById("filtroFecha25Desde").value="";document.getElementById("filtroFecha25Hasta").value="";}
+  else{pFiltro25={desde:parseInputDate(document.getElementById("filtroFecha25Desde").value),hasta:parseInputDate(document.getElementById("filtroFecha25Hasta").value)};}
+  const u26=document.getElementById("filtroFecha26Unica").value;
+  if(u26){pFiltro26={desde:parseInputDate(u26),hasta:parseInputDate(u26)};document.getElementById("filtroFecha26Desde").value="";document.getElementById("filtroFecha26Hasta").value="";}
+  else{pFiltro26={desde:parseInputDate(document.getElementById("filtroFecha26Desde").value),hasta:parseInputDate(document.getElementById("filtroFecha26Hasta").value)};}
+  actualizarLabelFiltro();
+  if(pData25.length&&pData26.length)pAnalyze();
+}
+function actualizarLabelFiltro(){
+  const fmt=f=>f.desde&&f.hasta&&f.desde.getTime()===f.hasta.getTime()?iso(f.desde):(f.desde?iso(f.desde)+"→"+(f.hasta?iso(f.hasta):""):"Todo");
+  document.getElementById("filtroActivoLabel").textContent=`2025: ${fmt(pFiltro25)} | 2026: ${fmt(pFiltro26)}`;
+}
+function limpiarFiltroFecha(){
+  pFiltro25={desde:null,hasta:null};pFiltro26={desde:null,hasta:null};
+  ["filtroFecha25Unica","filtroFecha25Desde","filtroFecha25Hasta","filtroFecha26Unica","filtroFecha26Desde","filtroFecha26Hasta"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("filtroActivoLabel").textContent="";
+  if(pData25.length&&pData26.length)pAnalyze();
+}
+function filtrarPorFecha(data,filtro){
+  if(!filtro.desde&&!filtro.hasta)return data;
+  return data.filter(row=>{const raw=parseFechaExcel(row["Date Sold"]);if(!raw)return false;const d=fechaNorm(raw);if(filtro.desde&&d<fechaNorm(filtro.desde))return false;if(filtro.hasta&&d>fechaNorm(filtro.hasta))return false;return true;});
+}
+function pSumBy(data,field){const map={};data.forEach(row=>{const k=(row[field]||"Sin datos").toString().trim();map[k]=(map[k]||0)+(parseFloat(row["Total Sales"])||0);});return map;}
+function pSumByItem(data){const map={};data.forEach(row=>{const k=(row["Item"]||"Sin código").toString().trim();const desc=(row["Description"]||"").toString().trim();if(!map[k])map[k]={sales:0,desc};map[k].sales+=(parseFloat(row["Total Sales"])||0);});return map;}
+function pBuildRows(keys,m25,m26){return keys.map(k=>{const v25=m25[k]||0,v26=m26[k]||0,diff=v26-v25,pct=v25>0?(diff/v25)*100:(v26>0?100:0);return{key:k,v25,v26,diff,pct};}).sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));}
+function pRenderTable(bodyId,rows,badges){
+  document.getElementById(bodyId).innerHTML=rows.map(r=>`<tr style="background:${r.diff>=0?"var(--azul-light)":"var(--row-hover)"}">
+    <td class="left" style="font-weight:500">${r.key}</td>
+    <td>${fmtC2(r.v25)}</td><td>${fmtC2(r.v26)}</td>
+    <td style="color:${r.diff>=0?AZUL:NEG};font-weight:600">${fmtC2(r.diff)}</td>
+    <td style="color:${r.diff>=0?AZUL:NEG};font-weight:600">${fmtPct(r.pct)}</td>
+    ${badges?`<td class="left"><span class="badge ${r.diff>=0?"badge-pos":"badge-neg"}">${r.diff>=0?"▲ Creció":"▼ Cayó"}</span></td>`:""}`).join("");
+}
+function pAnalyze(){
+  const d25F=filtrarPorFecha(pData25,pFiltro25),d26F=filtrarPorFecha(pData26,pFiltro26);
+  const s25=pSumBy(d25F,"Supplier"),s26=pSumBy(d26F,"Supplier");
+  const dp25=pSumBy(d25F,"Department"),dp26=pSumBy(d26F,"Department");
+  const c25=pSumBy(d25F,"Category"),c26=pSumBy(d26F,"Category");
+  const i25=pSumByItem(d25F),i26=pSumByItem(d26F);
+  const allS=[...new Set([...Object.keys(s25),...Object.keys(s26)])];
+  const allD=[...new Set([...Object.keys(dp25),...Object.keys(dp26)])];
+  const allC=[...new Set([...Object.keys(c25),...Object.keys(c26)])];
+  const allI=[...new Set([...Object.keys(i25),...Object.keys(i26)])];
+  pRows=pBuildRows(allS,s25,s26);
+  pRenderTable("pbodySupplier",pRows,true);
+  pRenderTable("pbodyDept",pBuildRows(allD,dp25,dp26),false);
+  pRenderTable("pbodyCat",pBuildRows(allC,c25,c26),false);
+  pItemRows=allI.map(k=>{const v25=(i25[k]?.sales)||0,v26=(i26[k]?.sales)||0,desc=i25[k]?.desc||i26[k]?.desc||"";const diff=v26-v25,pct=v25>0?(diff/v25)*100:(v26>0?100:0);return{key:k,desc,v25,v26,diff,pct};}).sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
+  document.getElementById("pbodyItem").innerHTML=pItemRows.map(r=>`
+    <tr style="background:${r.diff>=0?"var(--azul-light)":"var(--row-hover)"}">
+      <td class="left" style="font-weight:500;font-size:12px">${r.key}</td>
+      <td class="left" style="font-size:12px;color:var(--text2)">${r.desc}</td>
+      <td>${fmtC2(r.v25)}</td><td>${fmtC2(r.v26)}</td>
+      <td style="color:${r.diff>=0?AZUL:NEG};font-weight:600">${fmtC2(r.diff)}</td>
+      <td style="color:${r.diff>=0?AZUL:NEG};font-weight:600">${fmtPct(r.pct)}</td>
+      <td class="left"><span class="badge ${r.diff>=0?"badge-pos":"badge-neg"}">${r.diff>=0?"▲":"▼"}</span></td>
+    </tr>`).join("");
+  const tot25=pRows.reduce((s,r)=>s+r.v25,0),tot26=pRows.reduce((s,r)=>s+r.v26,0);
+  const diff=tot26-tot25,pct=tot25>0?(diff/tot25)*100:0;
+  const posR=pRows.filter(r=>r.diff>0),negR=pRows.filter(r=>r.diff<0);
+  const mejor=posR.length?posR.reduce((a,b)=>b.pct>a.pct?b:a):{key:"—",pct:0};
+  const peor=negR.length?negR.reduce((a,b)=>b.pct<a.pct?b:a):{key:"—",pct:0};
+  document.getElementById("pSummaryCards").innerHTML=[
+    ["Total 2025",fmtC2(tot25),null],["Total 2026",fmtC2(tot26),null],
+    ["Diferencia",fmtC2(diff),diff],["Variación",fmtPct(pct),pct],
+    ["🏆 Mayor crecimiento",mejor.key+"<br><small>"+fmtPct(mejor.pct)+"</small>",1],
+    ["📉 Mayor caída",peor.key+"<br><small>"+fmtPct(peor.pct)+"</small>",-1]
+  ].map(([l,v,s])=>`<div class="card"><div class="card-label">${l}</div><div class="card-value" style="font-size:14px;color:${s===null?"var(--text)":s>=0?AZUL:NEG}">${v}</div></div>`).join("");
+  pChartInst=destroyChart(pChartInst);
+  const top=pRows.slice(0,12);
+  pChartInst=new Chart(document.getElementById("pChartSupplier"),{type:"bar",
+    data:{labels:top.map(r=>r.key.length>14?r.key.slice(0,14)+"…":r.key),
+      datasets:[{label:"2025",data:top.map(r=>r.v25),backgroundColor:"#FF6B0055",borderColor:NARANJA,borderWidth:1.5,borderRadius:3},
+                {label:"2026",data:top.map(r=>r.v26),backgroundColor:AZUL,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}},
+      scales:{y:{ticks:{callback:v=>"C$"+Math.round(v/1000)+"k",font:{size:11},color:darkMode?"#aaa":"#666"}},x:{ticks:{font:{size:10},color:darkMode?"#aaa":"#666"}}}}
+  });
+  document.getElementById("pResults").style.display="block";
+}
+function setPRTab(idx,el){
+  document.querySelectorAll("#sec3 .sub-tab").forEach(t=>t.classList.remove("active"));el.classList.add("active");
+  ["prsec0","prsec1","prsec2","prsec3","prsec4","prsec5"].forEach((id,i)=>document.getElementById(id).classList.toggle("active",i===idx));
+  if(idx===5)renderAcumulado();
+}
+function renderAcumulado(){
+  if(!pRows.length){document.getElementById("pbodyAcum").innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:20px">Subí los Excel y hacé clic en Analizar primero.</td></tr>`;document.getElementById("pAcumCards").innerHTML="";return;}
+  const tot25E=pRows.reduce((s,r)=>s+r.v25,0)||1,tot26E=pRows.reduce((s,r)=>s+r.v26,0)||1;
+  const acumT=getAcumMes(CFG.mes,CFG.anio);
+  const acumRows=pRows.map(r=>{const a25=(r.v25/tot25E)*acumT,a26=(r.v26/tot26E)*acumT,diff=a26-a25,pct=a25>0?(diff/a25)*100:0;return{key:r.key,a25,a26,diff,pct};}).sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
+  const tA25=acumRows.reduce((s,r)=>s+r.a25,0),tA26=acumRows.reduce((s,r)=>s+r.a26,0),tDiff=tA26-tA25,tPct=tA25>0?(tDiff/tA25)*100:0;
+  const mejor=acumRows.filter(r=>r.diff>0).reduce((a,b)=>b.pct>a.pct?b:a,{key:"—",pct:0});
+  const peor=acumRows.filter(r=>r.diff<0).reduce((a,b)=>b.pct<a.pct?b:a,{key:"—",pct:0});
+  document.getElementById("pAcumCards").innerHTML=[
+    ["Acum. 2025",fmtC2(tA25),null],["Acum. 2026",fmtC2(tA26),null],
+    ["Diferencia",fmtC2(tDiff),tDiff],["Variación",fmtPct(tPct),tPct],
+    ["🏆 Mejor proveedor",mejor.key+"<br><small>"+fmtPct(mejor.pct)+"</small>",1],
+    ["📉 Peor proveedor",peor.key+"<br><small>"+fmtPct(peor.pct)+"</small>",-1]
+  ].map(([l,v,s])=>`<div class="card"><div class="card-label">${l}</div><div class="card-value" style="font-size:14px;color:${s===null?"var(--text)":s>=0?AZUL:NEG}">${v}</div></div>`).join("");
+  document.getElementById("pbodyAcum").innerHTML=acumRows.map(r=>`
+    <tr style="background:${r.diff>=0?"var(--azul-light)":"var(--row-hover)"}">
+      <td class="left" style="font-weight:500">${r.key}</td>
+      <td>${fmtC2(r.a25)}</td><td>${fmtC2(r.a26)}</td>
+      <td style="color:${r.diff>=0?AZUL:NEG};font-weight:600">${fmtC2(r.diff)}</td>
+      <td style="color:${r.diff>=0?AZUL:NEG};font-weight:600">${fmtPct(r.pct)}</td>
+      <td class="left"><span class="badge ${r.diff>=0?"badge-pos":"badge-neg"}">${r.diff>=0?"▲ Creció":"▼ Cayó"}</span></td>
+    </tr>`).join("");
+}
+function pFilterTable(q){document.querySelectorAll("#ptblSupplier tbody tr").forEach(r=>{r.style.display=r.cells[0].textContent.toLowerCase().includes(q.toLowerCase())?"":"none";});}
+function pFilterDir(){const dir=document.getElementById("pFilterDir").value;document.querySelectorAll("#ptblSupplier tbody tr").forEach(r=>{const v=parseFloat(r.cells[3].textContent.replace(/[^0-9.-]/g,""));r.style.display=!dir?"":(dir==="pos"?v>=0:v<0)?"":"none";});}
+function pFilterItem(q){document.querySelectorAll("#ptblItem tbody tr").forEach(r=>{const txt=(r.cells[0].textContent+" "+r.cells[1].textContent).toLowerCase();r.style.display=txt.includes(q.toLowerCase())?"":"none";});}
+function pFilterItemDir(){const dir=document.getElementById("pFilterItemDir").value;document.querySelectorAll("#ptblItem tbody tr").forEach(r=>{const v=parseFloat(r.cells[4].textContent.replace(/[^0-9.-]/g,""));r.style.display=!dir?"":(dir==="pos"?v>=0:v<0)?"":"none";});}
+function pSortTable(tid,col){
+  const tbody=document.getElementById(tid).querySelector("tbody"),rows=Array.from(tbody.querySelectorAll("tr"));
+  const key=tid+col;pSortDir[key]=!pSortDir[key];
+  rows.sort((a,b)=>{const av=a.cells[col]?.textContent.replace(/[^0-9.-]/g,"")||"",bv=b.cells[col]?.textContent.replace(/[^0-9.-]/g,"")||"";const an=parseFloat(av),bn=parseFloat(bv),res=isNaN(an)?av.localeCompare(bv):an-bn;return pSortDir[key]?res:-res;});
+  rows.forEach(r=>tbody.appendChild(r));
+}
+
+async function pRunAI(){
+  if(!pRows.length){alert("Primero analizá los datos.");return;}
+  const labelFiltro=document.getElementById("filtroActivoLabel").textContent||"período analizado";
+  const top5c=pRows.filter(r=>r.diff<0).slice(0,5),top5g=pRows.filter(r=>r.diff>0).sort((a,b)=>b.pct-a.pct).slice(0,5);
+  const tot25=pRows.reduce((s,r)=>s+r.v25,0),tot26=pRows.reduce((s,r)=>s+r.v26,0);
+  const totalDiff=tot26-tot25,totalPct=tot25>0?(totalDiff/tot25)*100:0;
+  const topItemC=pItemRows.filter(r=>r.diff<0).slice(0,5),topItemG=pItemRows.filter(r=>r.diff>0).sort((a,b)=>b.pct-a.pct).slice(0,5);
+  const crecio=totalPct>=1,marginal=totalPct>=0&&totalPct<1;
+  const prompt=crecio?
+`Soy gerente de tienda. ${labelFiltro} CRECIMIENTO vs mismo período año pasado.
+TOTAL: 2025=C$${tot25.toFixed(2)} | 2026=C$${tot26.toFixed(2)} | +C$${totalDiff.toFixed(2)} (+${totalPct.toFixed(1)}%)
+TOP 5 PROVEEDORES QUE MÁS CRECIERON:\n${top5g.map(r=>`- ${r.key}: C$${r.v25.toFixed(2)} → C$${r.v26.toFixed(2)} (${fmtPct(r.pct)})`).join("\n")||"Ninguno"}
+TOP 5 PROVEEDORES CON CAÍDA:\n${top5c.map(r=>`- ${r.key}: C$${r.v25.toFixed(2)} → C$${r.v26.toFixed(2)} (${fmtPct(r.pct)})`).join("\n")||"Ninguno"}
+TOP 5 PRODUCTOS QUE MÁS CRECIERON:\n${topItemG.map(r=>`- [${r.key}] ${r.desc}: C$${r.v25.toFixed(2)} → C$${r.v26.toFixed(2)} (${fmtPct(r.pct)})`).join("\n")||"Sin datos"}
+TOP 5 PRODUCTOS MÁS AFECTADOS:\n${topItemC.map(r=>`- [${r.key}] ${r.desc}: C$${r.v25.toFixed(2)} → C$${r.v26.toFixed(2)} (${fmtPct(r.pct)})`).join("\n")||"Sin datos"}
+Análisis ESTRATÉGICO: 1.RESUMEN 2.FACTORES DE ÉXITO 3.CÓMO SOSTENERLO 4.OPORTUNIDADES 5.LECCIÓN CLAVE
+Tono motivacional. Lenguaje de gerente. Español. Conciso.`
+  :`Soy gerente de tienda. ${labelFiltro} ${marginal?"crecimiento MARGINAL <1%":"CAÍDA"} vs mismo período año pasado.
+TOTAL: 2025=C$${tot25.toFixed(2)} | 2026=C$${tot26.toFixed(2)} | C$${totalDiff.toFixed(2)} (${fmtPct(totalPct)})
+TOP 5 PROVEEDORES CON MAYOR CAÍDA:\n${top5c.map(r=>`- ${r.key}: C$${r.v25.toFixed(2)} → C$${r.v26.toFixed(2)} (${fmtPct(r.pct)})`).join("\n")||"Ninguno"}
+TOP 5 PROVEEDORES QUE CRECIERON:\n${top5g.map(r=>`- ${r.key}: C$${r.v25.toFixed(2)} → C$${r.v26.toFixed(2)} (${fmtPct(r.pct)})`).join("\n")||"Ninguno"}
+TOP 5 PRODUCTOS MÁS AFECTADOS:\n${topItemC.map(r=>`- [${r.key}] ${r.desc}: C$${r.v25.toFixed(2)} → C$${r.v26.toFixed(2)} (${fmtPct(r.pct)})`).join("\n")||"Sin datos"}
+TOP 5 PRODUCTOS QUE MÁS CRECIERON:\n${topItemG.map(r=>`- [${r.key}] ${r.desc}: C$${r.v25.toFixed(2)} → C$${r.v26.toFixed(2)} (${fmtPct(r.pct)})`).join("\n")||"Sin datos"}
+Análisis CORRECTIVO: 1.RESUMEN 2.HALLAZGOS 3.ACCIONES INMEDIATAS 4.ACCIONES PREVENTIVAS 5.OPORTUNIDADES
+Tono urgente. Lenguaje de gerente. Español. Conciso.`;
+  document.getElementById("pAiBox").style.display="block";
+  llamarIA(prompt,"Análisis de Proveedores");
+}
+
+function pExport(){
+  if(!pRows.length){alert("Primero analizá los datos.");return;}
+  let csv="Tipo,Nombre,Descripción,Venta 2025,Venta 2026,Diferencia,%\n";
+  pRows.forEach(r=>csv+=`"Proveedor","${r.key}","",${r.v25.toFixed(2)},${r.v26.toFixed(2)},${r.diff.toFixed(2)},${r.pct.toFixed(2)}%\n`);
+  pItemRows.forEach(r=>csv+=`"Producto","${r.key}","${r.desc}",${r.v25.toFixed(2)},${r.v26.toFixed(2)},${r.diff.toFixed(2)},${r.pct.toFixed(2)}%\n`);
+  dl(csv,"analisis_proveedores.csv");
+}
+
+function exportarJSON(){
+  const backup={
+    version:"1.0",
+    fecha:new Date().toISOString(),
+    tienda:CFG.nombre||"Mi Tienda",
+    cfg:CFG,
+    datos:allData
+  };
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json;charset=utf-8;"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  const fecha=new Date().toLocaleDateString("es-NI",{day:"2-digit",month:"2-digit",year:"numeric"}).replace(/\//g,"-");
+  a.download=`ventas_${(CFG.nombre||"tienda").replace(/\s+/g,"_")}_${fecha}.json`;
+  a.click();
+}
+
+function importarJSON(input){
+  const file=input.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const backup=JSON.parse(e.target.result);
+      if(!backup.cfg||!backup.datos){alert("❌ Archivo inválido.");return;}
+      const confirmar=confirm(`¿Importar datos de "${backup.tienda}" (${new Date(backup.fecha).toLocaleDateString("es-NI")})?\n\nEsto reemplazará los datos actuales.`);
+      if(!confirmar)return;
+      CFG=backup.cfg;
+      allData=backup.datos;
+      localStorage.setItem("ventasCFG",JSON.stringify(CFG));
+      localStorage.setItem("ventasData",JSON.stringify(allData));
+      loadConfigUI();
+      render();
+      // Mostrar notificación
+      const n=document.createElement("div");
+      n.style.cssText="position:fixed;bottom:20px;right:20px;background:#1D9E75;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2)";
+      n.textContent="✅ Datos importados correctamente";
+      document.body.appendChild(n);
+      setTimeout(()=>n.remove(),3000);
+    }catch(err){alert("❌ Error al leer el archivo. Verificá que sea un JSON válido.");}
+  };
+  r.readAsText(file);
+  input.value="";
+}
+
+loadConfigUI();
+analisisWeekOffset=0;
+render();
+</script>
+</body>
+</html>

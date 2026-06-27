@@ -6,10 +6,10 @@
 <title>Registro de Ventas Semanal</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
+<!-- Firebase CDN compatible (no módulos) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyAkuKkJGof9JMya42UDUOa2vh9Dj1cdaUA",
   authDomain: "ventas-semanal.firebaseapp.com",
@@ -19,27 +19,25 @@ const firebaseConfig = {
   messagingSenderId: "629330032504",
   appId: "1:629330032504:web:039ced6564337c1e427a8d"
 };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// Guardar datos en Firebase
-window.saveDataFirebase = function(data, cfg) {
-  set(ref(db, 'ventasData'), data);
-  set(ref(db, 'ventasCFG'), cfg);
+window.saveDataFirebase = function(data, cfg){
+  db.ref('ventasData').set(data);
+  db.ref('ventasCFG').set(cfg);
 };
 
-// Cargar datos desde Firebase al iniciar
-onValue(ref(db, 'ventasData'), (snapshot) => {
-  if (snapshot.exists()) {
-    window.allData = snapshot.val();
+// Cargar datos al iniciar
+db.ref('ventasData').on('value', snap => {
+  if(snap.exists()){
+    window.allData = snap.val();
     localStorage.setItem("ventasData", JSON.stringify(window.allData));
+    if(window.render) window.render();
   }
 });
-
-onValue(ref(db, 'ventasCFG'), (snapshot) => {
-  if (snapshot.exists()) {
-    window.CFG = snapshot.val();
+db.ref('ventasCFG').on('value', snap => {
+  if(snap.exists()){
+    window.CFG = snap.val();
     localStorage.setItem("ventasCFG", JSON.stringify(window.CFG));
     if(window.loadConfigUI) window.loadConfigUI();
     if(window.render) window.render();

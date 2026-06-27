@@ -129,7 +129,38 @@ input[type=text]:focus,input[type=date]:focus,select:focus,textarea:focus{outlin
 .ai-streaming{border-left:3px solid var(--naranja);padding-left:12px;font-size:13px;line-height:1.8;color:var(--text);white-space:pre-wrap}
 .ai-typing::after{content:"▋";animation:blink .7s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-@media(max-width:600px){.diff-grid{grid-template-columns:repeat(4,1fr)}.cards{grid-template-columns:repeat(2,1fr)}.upload-area{grid-template-columns:1fr}}
+@media(max-width:768px){
+  body{font-size:12px}
+  .container{padding:10px}
+  h1{font-size:15px}
+  .header{gap:6px}
+  .header-actions{gap:4px;flex-wrap:wrap}
+  .btn{padding:5px 10px;font-size:11px}
+  .theme-btn{padding:4px 10px;font-size:11px}
+  .tabs{gap:0}
+  .tab{padding:6px 8px;font-size:11px}
+  .week-nav{gap:4px}
+  .week-label{font-size:11px;min-width:160px}
+  .cards{grid-template-columns:repeat(2,1fr);gap:6px}
+  .card{padding:8px 10px}
+  .card-label{font-size:10px}
+  .card-value{font-size:14px}
+  table{font-size:11px}
+  th{padding:6px 6px;font-size:10px}
+  td{padding:5px 6px;font-size:11px}
+  input[type=number]{width:75px;font-size:12px;padding:3px 5px}
+  .diff-grid{grid-template-columns:repeat(4,1fr);gap:4px}
+  .diff-card{padding:6px 2px}
+  .diff-label{font-size:10px}
+  .diff-val{font-size:11px}
+  .upload-area{grid-template-columns:1fr}
+  .sub-tabs{flex-wrap:wrap}
+  .sub-tab{padding:5px 10px;font-size:11px}
+  .week-nav button{padding:3px 10px;font-size:13px}
+  .sec-title{font-size:13px}
+  #iaModal>div{padding:14px}
+  .fecha-filtro{padding:10px 12px}
+}
 </style>
 </head>
 <body>
